@@ -9,9 +9,14 @@ import GeoJSON from 'ol/format/GeoJSON';
 import {get} from 'ol/proj';
 import Feature from 'ol/Feature';
 import Polygon from 'ol/geom/Polygon';
+import Point from 'ol/geom/Point';
+import LineString from 'ol/geom/LineString';
+//import { pointFeature, polygonFeature } from '../server/Model/Feature';
 
-let saved = [];//for fetching data
-
+let saved =[];
+let savedPolygon = [];//for fetching data
+let savedPoint = [];
+let savedLinstring = [];
 const postServer = (data)=>
 {
   fetch('http://127.0.0.1:5000/api/geoData',{
@@ -30,7 +35,10 @@ const postServer = (data)=>
   });
 }
 const getServer = async ()=>{
-  saved =  await fetch('http://127.0.0.1:5000/api/geoData').then(response=>response.json())
+  saved =  await fetch('http://127.0.0.1:5000/api/geoData').then(response=>response.json());
+  savedPolygon = saved[0];
+  savedPoint = saved[1];
+  console.log(saved);
 }
 
 
@@ -46,9 +54,12 @@ source.on('addfeature',(evt)=>{
   const cords = feature.getGeometry().getCoordinates();
   const writer = new GeoJSON();
   const data = writer.writeFeatureObject(feature);
+  console.log('--data--')
   console.log(data);
+  
+ if(!data.properties)
   postServer(data);
-  console.log(cords);
+  //console.log(cords);
 })
 
 
@@ -91,13 +102,24 @@ typeSelect.onchange = ()=>{
 addInteractions();
 window.addEventListener("load",async (evt)=>{
   await getServer();
-  saved.forEach(element => {
-    const feature = new Feature({
+  let feature;
+  savedPolygon.forEach(element => {    
+      feature = new Feature({
       geometry:new Polygon(element.geometry.coordinates),
       type:element.type,
       _id:element._id
     })
+    
     source.addFeature(feature);
   });
+  savedPoint.forEach(element => {    
+    feature = new Feature({
+    geometry:new Point(element.geometry.coordinates),
+    type:element.type,
+    _id:element._id
+  })
+  
+  source.addFeature(feature);
+});
 
 })
