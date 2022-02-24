@@ -10,6 +10,7 @@ import {get} from 'ol/proj';
 import Feature from 'ol/Feature';
 import Polygon from 'ol/geom/Polygon';
 import Point from 'ol/geom/Point';
+import Icon from 'ol/style/Icon'
 import LineString from 'ol/geom/LineString';
 //import click from 'ol/events/condition/click';
 //import { pointFeature, polygonFeature } from '../server/Model/Feature';
@@ -76,16 +77,38 @@ const tile = new TileLayer({
   source:new OSM(),
 });
 const source = new VectorSource();
+const sourceIcon = new VectorSource();
 
+
+//fucntion for icons
+const changeIcon = (cords)=>{
+const iconFeature = new Feature({
+  geometry:new Point(cords),
+    
+    });
+    const iconStyle =  new Style(
+      {
+        image: new Icon({
+          anchor:[0.5,45],
+          anchorXUnits:'fraction',
+          anchorYUnits:'pixels',
+          src:"./icons/icon.png",
+        })
+      }
+    )
+    iconFeature.setStyle(iconStyle);
+ 
+    sourceIcon.addFeature(iconFeature);
+    }
 //event
 source.on('addfeature',(evt)=>{
   const feature = evt.feature;
   const cords = feature.getGeometry().getCoordinates();
-  const writer = new GeoJSON();
+  const writer = new GeoJSON();  
   const data = writer.writeFeatureObject(feature);
-  // console.log('--data--')
-  // console.log(data);
-  
+  console.log("hi")
+  changeIcon(cords);
+ 
  if(!data.properties)//prevent duplication while loading
   postServer(data);
   //console.log(cords);
@@ -93,7 +116,7 @@ source.on('addfeature',(evt)=>{
 
 //updation
 
-source.on('changefeature',(evt)=>{
+source.on('changefeature',(evt)=>{  //change to modifyend
   const feature = evt.feature;
   const writer = new GeoJSON();
   const data= writer.writeFeatureObject(feature);
@@ -107,14 +130,49 @@ source.on('changefeature',(evt)=>{
 })
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const typeSelect = document.getElementById('type');
+
+
+
+
+  
+    
+
+
 const vector = new VectorLayer({
-  source: source,
+  source: sourceIcon,
 })
 
-
+// style: new Style({
+//   fill: new Fill({
+//     color: 'rgba(255, 255, 255, 0.2)',
+//   }),
 const map = new Map({
   target: 'map',
   layers: [tile,vector],
+  style: new Style({
+    fill: new Fill({
+      color:'rgba(255,255,255,0.2)',
+    })
+  }),
+  
   view: new View({
     center: [0, 0],
     zoom: 2
@@ -123,13 +181,14 @@ const map = new Map({
 const modify = new Modify({source:source});
 map.addInteraction(modify);
 let draw,snap;
-const typeSelect = document.getElementById('type');
+
 
 //interactions function
 const addInteractions = ()=>{
   draw = new Draw({
     source:source,
     type:typeSelect.value,
+   
   });
   map.addInteraction(draw);
   snap = new Snap({source:source});

@@ -19,6 +19,7 @@ const polySchema = new mongoose.Schema({
 
 //point
 const point = new mongoose.Schema({
+
     type: {
         type: String,
         enum: ['Point'],
