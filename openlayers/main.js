@@ -11,12 +11,17 @@ import Feature from 'ol/Feature';
 import Polygon from 'ol/geom/Polygon';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
+//import click from 'ol/events/condition/click';
 //import { pointFeature, polygonFeature } from '../server/Model/Feature';
 
 let saved =[];
 let savedPolygon = [];//for fetching data
 let savedPoint = [];
 let savedLinstring = [];
+
+
+
+//post
 const postServer = (data)=>
 {
   fetch('http://127.0.0.1:5000/api/geoData',{
@@ -34,12 +39,36 @@ const postServer = (data)=>
     console.log('Error:',error);
   });
 }
+
+//get
 const getServer = async ()=>{
   saved =  await fetch('http://127.0.0.1:5000/api/geoData').then(response=>response.json());
   savedPolygon = saved[0];
   savedPoint = saved[1];
-  console.log(saved);
+ // console.log(saved);
 }
+
+//put
+
+const updateServer = async(data)=>{
+  await fetch('http://127.0.0.1:5000/api/geoData',
+  {
+    method :'PUT',
+    headers: {
+      'Content-Type':'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+  .then(response=>response.json())
+  .then(data=>{
+    console.log('Successs:',data);
+  })
+  .catch((error)=>{
+    console.log('Error:',error);
+  });
+
+}
+
 
 
 
@@ -54,14 +83,28 @@ source.on('addfeature',(evt)=>{
   const cords = feature.getGeometry().getCoordinates();
   const writer = new GeoJSON();
   const data = writer.writeFeatureObject(feature);
-  console.log('--data--')
-  console.log(data);
+  // console.log('--data--')
+  // console.log(data);
   
- if(!data.properties)
+ if(!data.properties)//prevent duplication while loading
   postServer(data);
   //console.log(cords);
 })
 
+//updation
+
+source.on('changefeature',(evt)=>{
+  const feature = evt.feature;
+  const writer = new GeoJSON();
+  const data= writer.writeFeatureObject(feature);
+  updateServer(data);
+ // let uid = data.properties._id;
+  
+ // 
+  //const id = feature.getId(); 
+  
+  //console.log(uid);
+})
 
 
 const vector = new VectorLayer({
@@ -123,3 +166,4 @@ window.addEventListener("load",async (evt)=>{
 });
 
 })
+

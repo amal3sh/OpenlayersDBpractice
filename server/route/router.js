@@ -4,5 +4,6 @@ const router = express.Router();
 router.route("/")
     .post(Data.postData)
     .get(Data.getData)
+    .put(Data.putData)
 
 module.exports = router;
