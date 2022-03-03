@@ -10,7 +10,8 @@ import {get} from 'ol/proj';
 import Feature from 'ol/Feature';
 import Polygon from 'ol/geom/Polygon';
 import Point from 'ol/geom/Point';
-import Icon from 'ol/style/Icon'
+import Icon from 'ol/style/Icon';
+import { getCenter } from 'ol/extent';
 import LineString from 'ol/geom/LineString';
 //import click from 'ol/events/condition/click';
 //import { pointFeature, polygonFeature } from '../server/Model/Feature';
@@ -69,16 +70,20 @@ const updateServer = async(data)=>{
   });
 
 }
-
-
-
-
 const tile = new TileLayer({
   source:new OSM(),
 });
 const source = new VectorSource();
-const sourceIcon = new VectorSource();
-
+const iconStyle =  new Style(
+  {
+    image: new Icon({
+      anchor:[.5,25],
+      anchorXUnits:'fraction',
+      anchorYUnits:'pixels',
+      src:"./icons/icon.png",
+    })
+  }
+)
 
 //fucntion for icons
 const changeIcon = (cords)=>{
@@ -86,19 +91,10 @@ const iconFeature = new Feature({
   geometry:new Point(cords),
     
     });
-    const iconStyle =  new Style(
-      {
-        image: new Icon({
-          anchor:[0.5,45],
-          anchorXUnits:'fraction',
-          anchorYUnits:'pixels',
-          src:"./icons/icon.png",
-        })
-      }
-    )
+   
     iconFeature.setStyle(iconStyle);
  
-    sourceIcon.addFeature(iconFeature);
+    source.changed(iconFeature);
     }
 //event
 source.on('addfeature',(evt)=>{
@@ -106,64 +102,34 @@ source.on('addfeature',(evt)=>{
   const cords = feature.getGeometry().getCoordinates();
   const writer = new GeoJSON();  
   const data = writer.writeFeatureObject(feature);
-  console.log("hi")
+  //console.log("hi")
+  feature.setStyle(iconStyle)
   changeIcon(cords);
  
  if(!data.properties)//prevent duplication while loading
   postServer(data);
   //console.log(cords);
 })
+const modify = new Modify({source:source});
 
 //updation
 
-source.on('changefeature',(evt)=>{  //change to modifyend
-  const feature = evt.feature;
+modify.on('modifyend',(evt)=>{  //change to modifyend
+  const feature = evt.features.getArray()[0];
   const writer = new GeoJSON();
-  const data= writer.writeFeatureObject(feature);
+  const data= writer.writeFeatureObject(feature);  
   updateServer(data);
- // let uid = data.properties._id;
-  
- // 
-  //const id = feature.getId(); 
-  
-  //console.log(uid);
+ changeIcon(data.geometry.coordinates);
+
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const typeSelect = document.getElementById('type');
 
-
-
-
-  
-    
-
-
 const vector = new VectorLayer({
-  source: sourceIcon,
+  source:source
 })
 
-// style: new Style({
-//   fill: new Fill({
-//     color: 'rgba(255, 255, 255, 0.2)',
-//   }),
+
 const map = new Map({
   target: 'map',
   layers: [tile,vector],
@@ -178,8 +144,12 @@ const map = new Map({
     zoom: 2
   })
 });
-const modify = new Modify({source:source});
+
+
 map.addInteraction(modify);
+
+
+
 let draw,snap;
 
 
@@ -202,6 +172,8 @@ typeSelect.onchange = ()=>{
   addInteractions();
 }
 addInteractions();
+
+//onload event
 window.addEventListener("load",async (evt)=>{
   await getServer();
   let feature;
